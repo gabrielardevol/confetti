@@ -34,20 +34,24 @@
         button {
             margin-top: 15px;
             padding: 10px 20px;
-            background: #5caee3;
+            background: #404040;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
         }
         button:hover {
-            background: #4291c9;
+            background: #353535;
+        }
+
+        #canvas {
+            border-radius: 1rem
         }
     </style>
 </head>
 <body>
 
-<h1>Generador de Polígons</h1>
+<h1>Confetti generator</h1>
 
 <div id="controls">
     <div class="control">
@@ -57,7 +61,7 @@
 
     <div class="control">
         <label>Densitat (figures per 1000 px²)</label>
-        <input type="number" id="density" value="10" min="1" max="100" step="1">
+        <input type="number" id="density" value="5" min="1" max="100" step="1">
     </div>
 
     <div class="control">
@@ -66,17 +70,17 @@
     </div>
     <div class="control">
         <label>minDist</label>
-        <input type="number" id="minDist" value="3" min="1" max="100">
+        <input type="number" id="minDist" value="2" min="1" max="100">
     </div>
     <div class="control">
         <label>maxDist</label>
-        <input type="number" id="maxDist" value="10" min="1" max="200">
+        <input type="number" id="maxDist" value="5" min="1" max="200">
     </div>
-    <div class="control">
+    <div class="control" style="display: none">
         <label>minAngle</label>
         <input type="number" id="minAngleDeg" value="20" min="0" max="180">
     </div>
-    <div class="control">
+    <div class="control" style="display: none">
         <label>maxAngle</label>
         <input type="number" id="maxAngleDeg" value="240" min="0" max="360">
     </div>
