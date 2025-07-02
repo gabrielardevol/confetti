@@ -56,9 +56,10 @@
     </div>
 
     <div class="control">
-        <label>Shapes</label>
-        <input type="number" id="numShapes" value="220" min="1" max="1000">
+        <label>Densitat (figures per 1000 px²)</label>
+        <input type="number" id="density" value="10" min="1" max="100" step="1">
     </div>
+
     <div class="control">
         <label>Vertices</label>
         <input type="number" id="numVertices" value="4" min="3" max="10">
@@ -80,28 +81,42 @@
         <input type="number" id="maxAngleDeg" value="240" min="0" max="360">
     </div>
     <div class="control">
-        <label>Concentració (1 = dispers, 5 = centrat)</label>
-        <input type="range" id="concentrationLevel" min="1" max="20" value="3" step="1">
+        <label>Concentració</label>
+        <input type="range" id="concentrationLevel" min="1" max="20" value="0" step="1">
 
     </div>
 
 
     <div class="control">
-        <label>Color 1</label>
-        <input type="color" class="color-picker" value="#ffbc56">
+        <label>
+            <input type="checkbox" class="color-enable" checked>
+            Color 1
+        </label>
+        <input type="color" class="color-picker" value="#ffbc56" >
     </div>
     <div class="control">
-        <label>Color 2</label>
-        <input type="color" class="color-picker" value="#5caee3">
+        <label>
+            <input type="checkbox" class="color-enable" checked>
+            Color 2
+        </label>
+        <input type="color" class="color-picker" value="#5caee3" >
     </div>
     <div class="control">
-        <label>Color 3</label>
-        <input type="color" class="color-picker" value="#51dccc">
+        <label>
+            <input type="checkbox" class="color-enable" checked>
+            Color 3
+        </label>
+        <input type="color" class="color-picker" value="#51dccc" >
     </div>
     <div class="control">
-        <label>Color 4</label>
-        <input type="color" class="color-picker" value="#ff653c">
+        <label>
+            <input type="checkbox" class="color-enable" checked>
+            Color 4
+        </label>
+        <input type="color" class="color-picker" value="#ff653c" >
     </div>
+
+
 </div>
 
 <svg id="canvas" width="500" height="500"></svg>
@@ -114,7 +129,7 @@
     const height = 500;
 
     const inputs = {
-        numShapes: document.getElementById("numShapes"),
+        densityInput: densityInput = document.getElementById("density"),
         numVertices: document.getElementById("numVertices"),
         minDist: document.getElementById("minDist"),
         maxDist: document.getElementById("maxDist"),
@@ -122,7 +137,14 @@
         maxAngleDeg: document.getElementById("maxAngleDeg"),
     };
     const colorPickers = document.querySelectorAll(".color-picker");
+    const colorEnables = document.querySelectorAll(".color-enable");
     const concentrationSlider = document.getElementById("concentrationLevel");
+    const area = width * height; // 500 * 500 = 250000
+
+    // Calculem numShapes en funció de densitat
+    const density = +inputs.densityInput.value;
+    const numShapes = Math.round((density * area) / 1000);
+
 
     function angleBetweenPoints(p1, p2, p3) {
         const v1 = [p1[0] - p2[0], p1[1] - p2[1]];
@@ -160,13 +182,15 @@
         svg.innerHTML = "";
         svg.style.background = backgroundColorPicker.value;
 
-        const numShapes = +inputs.numShapes.value;
+        const density = +densityInput.value;
+        const area = width * height;
+        const numShapes = Math.round((density * area) / 1000);
         const numVertices = +inputs.numVertices.value;
         const minDist = +inputs.minDist.value;
         const maxDist = +inputs.maxDist.value;
         const minAngleDeg = +inputs.minAngleDeg.value;
         const maxAngleDeg = +inputs.maxAngleDeg.value;
-        const COLORS = Array.from(colorPickers).map(p => p.value);
+        const COLORS = getActiveColors();
 
         for (let i = 0; i < numShapes; i++) {
             const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -197,7 +221,15 @@
             svg.appendChild(group);
         }
     }
-
+    function getActiveColors() {
+        const activeColors = [];
+        colorPickers.forEach((picker, i) => {
+            if (colorEnables[i].checked) {
+                activeColors.push(picker.value);
+            }
+        });
+        return activeColors.length ? activeColors : ['#000000']; // fallback negre si no n'hi ha cap
+    }
     // Reacciona a qualsevol canvi
     document.querySelectorAll("input").forEach(input => {
         input.addEventListener("input", generateShapes);
@@ -226,6 +258,9 @@
         svg.style.background = originalBackground;
     });
 
+    // document.querySelectorAll("input").forEach(input => {
+    //     input.addEventListener("input", generateShapes);
+    // });
 
     // Generació inicial
     generateShapes();
