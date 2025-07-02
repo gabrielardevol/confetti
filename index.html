@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8" />
+    <title>Polígon amb distància, angles i rotació aleatòria</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        #controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .control {
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+            align-items: center;
+        }
+        input[type="number"], input[type="color"] {
+            width: 80px;
+        }
+        svg {
+            border: 1px solid #ccc;
+            background: white;
+            margin: 0 auto;
+            display: block;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #5caee3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #4291c9;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Generador de Polígons</h1>
+
+<div id="controls">
+    <div class="control">
+        <label>Fons</label>
+        <input type="color" id="backgroundColorPicker" value="#ffffff">
+    </div>
+
+    <div class="control">
+        <label>Shapes</label>
+        <input type="number" id="numShapes" value="220" min="1" max="1000">
+    </div>
+    <div class="control">
+        <label>Vertices</label>
+        <input type="number" id="numVertices" value="4" min="3" max="10">
+    </div>
+    <div class="control">
+        <label>minDist</label>
+        <input type="number" id="minDist" value="3" min="1" max="100">
+    </div>
+    <div class="control">
+        <label>maxDist</label>
+        <input type="number" id="maxDist" value="10" min="1" max="200">
+    </div>
+    <div class="control">
+        <label>minAngle</label>
+        <input type="number" id="minAngleDeg" value="20" min="0" max="180">
+    </div>
+    <div class="control">
+        <label>maxAngle</label>
+        <input type="number" id="maxAngleDeg" value="240" min="0" max="360">
+    </div>
+    <div class="control">
+        <label>Concentració (1 = dispers, 5 = centrat)</label>
+        <input type="range" id="concentrationLevel" min="1" max="20" value="3" step="1">
+
+    </div>
+
+
+    <div class="control">
+        <label>Color 1</label>
+        <input type="color" class="color-picker" value="#ffbc56">
+    </div>
+    <div class="control">
+        <label>Color 2</label>
+        <input type="color" class="color-picker" value="#5caee3">
+    </div>
+    <div class="control">
+        <label>Color 3</label>
+        <input type="color" class="color-picker" value="#51dccc">
+    </div>
+    <div class="control">
+        <label>Color 4</label>
+        <input type="color" class="color-picker" value="#ff653c">
+    </div>
+</div>
+
+<svg id="canvas" width="500" height="500"></svg>
+
+<button id="downloadBtn">Descarrega SVG</button>
+
+<script>
+    const svg = document.getElementById("canvas");
+    const width = 500;
+    const height = 500;
+
+    const inputs = {
+        numShapes: document.getElementById("numShapes"),
+        numVertices: document.getElementById("numVertices"),
+        minDist: document.getElementById("minDist"),
+        maxDist: document.getElementById("maxDist"),
+        minAngleDeg: document.getElementById("minAngleDeg"),
+        maxAngleDeg: document.getElementById("maxAngleDeg"),
+    };
+    const colorPickers = document.querySelectorAll(".color-picker");
+    const concentrationSlider = document.getElementById("concentrationLevel");
+
+    function angleBetweenPoints(p1, p2, p3) {
+        const v1 = [p1[0] - p2[0], p1[1] - p2[1]];
+        const v2 = [p3[0] - p2[0], p3[1] - p2[1]];
+        const dot = v1[0] * v2[0] + v1[1] * v2[1];
+        const mag1 = Math.hypot(v1[0], v1[1]);
+        const mag2 = Math.hypot(v2[0], v2[1]);
+        if (mag1 === 0 || mag2 === 0) return 180;
+        const cosAngle = dot / (mag1 * mag2);
+        const angleRad = Math.acos(Math.min(1, Math.max(-1, cosAngle)));
+        return angleRad * (180 / Math.PI);
+    }
+
+    function generatePointWithMinMaxDistXY(x, y, minDist, maxDist) {
+        function randomDist() {
+            const sign = Math.random() < 0.5 ? -1 : 1;
+            return sign * (minDist + Math.random() * (maxDist - minDist));
+        }
+        const newX = Math.min(width, Math.max(0, x + randomDist()));
+        const newY = Math.min(height, Math.max(0, y + randomDist()));
+        return [newX, newY];
+    }
+
+    function biasedRandom(range) {
+        const n = Math.round(+concentrationSlider.value);
+        let sum = 0;
+        for (let i = 0; i < n; i++) {
+            sum += Math.random();
+        }
+        return range * (sum / n);
+    }
+
+
+    function generateShapes() {
+        svg.innerHTML = "";
+        svg.style.background = backgroundColorPicker.value;
+
+        const numShapes = +inputs.numShapes.value;
+        const numVertices = +inputs.numVertices.value;
+        const minDist = +inputs.minDist.value;
+        const maxDist = +inputs.maxDist.value;
+        const minAngleDeg = +inputs.minAngleDeg.value;
+        const maxAngleDeg = +inputs.maxAngleDeg.value;
+        const COLORS = Array.from(colorPickers).map(p => p.value);
+
+        for (let i = 0; i < numShapes; i++) {
+            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+
+            const startX = biasedRandom(width);
+            const startY = biasedRandom(height);
+            const points = [[startX, startY]];
+
+            while (points.length < numVertices) {
+                const last = points[points.length - 1];
+                const newP = generatePointWithMinMaxDistXY(last[0], last[1], minDist, maxDist);
+
+                if (points.length >= 2) {
+                    const prev = points[points.length - 2];
+                    const angle = angleBetweenPoints(prev, last, newP);
+                    if (angle < minAngleDeg || angle > maxAngleDeg) continue;
+                }
+                points.push(newP);
+            }
+
+            polygon.setAttribute("points", points.map(p => p.join(",")).join(" "));
+            polygon.setAttribute("fill", COLORS[Math.floor(Math.random() * COLORS.length)]);
+
+            const angle = Math.random() * 360;
+            group.setAttribute("transform", `rotate(${angle}, ${startX}, ${startY})`);
+            group.appendChild(polygon);
+            svg.appendChild(group);
+        }
+    }
+
+    // Reacciona a qualsevol canvi
+    document.querySelectorAll("input").forEach(input => {
+        input.addEventListener("input", generateShapes);
+    });
+
+    // Botó de descarrega
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+        // Guarda el color actual
+        const originalBackground = svg.style.background;
+
+        // Elimina el fons per fer-lo transparent
+        svg.style.background = "none";
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "fons.svg";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Restaura el fons original per a l'usuari
+        svg.style.background = originalBackground;
+    });
+
+
+    // Generació inicial
+    generateShapes();
+</script>
+
+</body>
+</html>
